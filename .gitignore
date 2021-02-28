@@ -1,0 +1,38 @@
+# Locally installed binaries
+/bin32
+/bin64
+/bin
+/lib32
+/lib64
+/lib
+/share
+/include
+
+# Sofa
+/screenshots/
+/share/
+*.scn.log
+*.xml.log
+*.py.log
+GraphFilterTmp.txt
+
+# Python compiled files
+*.pyc
+
+# CMake user generated files
+CMakeLists.txt.user*
+
+# Unity build generated files
+UnityBuild*.cpp
+
+# Binary config file
+/.bin.json
+
+# Editors configs
+.vscode
+.clang-format
+/TODO
+
+# All subfolders in build folder , except for existing ones
+/build/*/
+!/build/cmake/

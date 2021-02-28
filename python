@@ -1,0 +1,44 @@
+#!/bin/bash
+# Finds and execute the local python interpreter.
+# In addition to Linux, we can execute this script on Windows for eg. from MINGW / Git bash.
+# Usage: ./python <args>
+
+if [[ "$VIRTUAL_ENV" != "" ]]
+then
+    # Special case when being in a virtual env: just run the default interpreter
+    python "$@"
+    exit $?
+fi
+
+SELF_DIR=$(dirname "$0")
+
+if [ -f $SELF_DIR/.bin.json ]
+then
+    # Development: read the .bin.json file to find the binaries dir
+    bin_dir=$(grep -Po '"binary_dir"\s*:\s*\K".+"' $SELF_DIR/.bin.json | cut -d'"' -f2)
+else
+    # Assume we have an install tree, or we are in packaged binaries
+    bin_dir=bin
+fi
+
+if [ -f ./$bin_dir/activate ]
+then
+    # This is a virtual env, which is not currently 'activated'.
+    # Like with the 1st case, let's not disable the user site dir (-s option) as
+    # some packages such as numpy may be installed there.
+    CMD="$SELF_DIR/$bin_dir/python"
+else
+    # This is a standalone/full python distribution. In this case we install all
+    # the 3rd-party dependencies locally and don't need the user site dir.
+    CMD="$SELF_DIR/$bin_dir/python -s"
+fi
+
+# When executing on Windows from Git bash or equivalent, use winpty to make the
+# interactive interpreter behave correctly
+if [ -x /usr/bin/winpty ]
+then
+    CMD="winpty -Xallow-non-tty $CMD"
+fi
+
+$CMD "$@"
+

@@ -1,0 +1,3 @@
+# By default ignore all subfolders, which will usually contain compilation output files.
+/*/
+!cmake

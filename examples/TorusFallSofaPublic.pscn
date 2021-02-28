@@ -1,0 +1,166 @@
+<?php
+$NBOBJECT=$_ENV["NBOBJECT"] ?? 10;
+$NBOBSTACLE=$_ENV["NBOBSTACLE"] ?? 16;
+$DOFLEVEL=$_ENV["DOFLEVEL"] ?? -4;
+$SCENE_SCALE=10.0;
+$FALL_RADIUS=40.0;
+$OBSTACLE_RADIUS=100.0;
+$FALL_V0=100.0;
+$FALL_H0=30.0;
+$FALL_HFIXED=200.0;
+$FALL_INTERVAL=16.0;
+$FALL_MINDIST=55.0;
+
+$rrand_seed=12345; /* initial seed, must be less than 2147483647 */
+
+function rrand($min, $max) {
+  global $rrand_seed;
+  $t=48271 * ($rrand_seed % 44488) - 3399 * (($rrand_seed-($rrand_seed % 44488)) / 44488);
+  $rrand_seed=($t>0) ? $t : $t + 2147483647;
+  return $min+($max-$min)*($rrand_seed / 2147483647);
+}
+
+function add_object($i,$x,$y,$z,$rx,$ry,$rz) {
+  global $SCENE_SCALE, $FALL_HFIXED, $FALL_V0;
+   $col = floor(($i+2)/4) % 3;
+        if ($col == 0) { $r = (46/255.0); $g = (31/255.0); $b = (22/255.0); }
+   else if ($col == 1) { $r = (202/255.0); $g = (128/255.0); $b = (55/255.0); }
+   else if ($col == 2) { $r = (240/255.0); $g = (239/255.0); $b = (228/255.0); }
+  $diff = 1.0;
+  $amb = 0.2;
+?>
+    <Node name="Torus<?=$i?>">
+      <EulerImplicitSolver name="ODE<?=$i?>" rayleighMass="0.1" rayleighStiffness="0.1" />
+      <SparseLDLSolver name="Linear<?=$i?>"  />
+      <TransformEngine name="Torus<?=$i?>VXForm" input_position="@/Mesh/stuffing.outputPoints" translation="<?= $x ?> <?= $y ?> <?= $z ?>" rotation="<?= $rx ?> <?= $ry ?> <?= $rz ?>" />
+      <TetrahedronSetTopologyContainer name="Torus<?=$i?>Topo" position="@/Mesh/stuffing.outputPoints" tetrahedra="@/Mesh/stuffing.outputTetrahedra"/>
+      <TetrahedronSetTopologyModifier name="Torus<?=$i?>Mod" />
+      <MechanicalObject name="Torus<?=$i?>State" template="Vec3d" velocity="@/Mesh/TorusVVel.output_position" rest_position="@/Mesh/stuffing.outputPoints" position="@Torus<?=$i?>VXForm.output_position" />
+      <TetrahedronSetGeometryAlgorithms name="Torus<?=$i?>Algo" />
+<?php if ($y > $FALL_HFIXED) { ?>
+      <FixedConstraint fixAll="true" endTime="<?=(($y-$FALL_HFIXED)/$FALL_V0)?>" />
+<?php } ?>
+      <UniformMass totalMass="20" />
+      <TetrahedronFEMForceField name="FEM" youngModulus="50" poissonRatio="0.45" />
+      <GenericConstraintCorrection name="Torus<?=$i?>CC" />
+      <Node name="Surface">
+        <TriangleSetTopologyContainer position="@/Mesh/MeshTorus1C.position" triangles="@/Mesh/MeshTorus1C.triangles" />
+        <MechanicalObject template="Vec3d" />
+        <BarycentricMapping useRestPosition="true" mapForces="false" mapMasses="false" mapConstraints="true" />
+        <TriangleCollisionModel name="Torus<?=$i?>CMT" proximity="<?= 0.02*$SCENE_SCALE ?>" contactStiffness="20" color="<?= $r*$diff ?> <?= $g*$diff ?> <?= $b*$diff ?>" />
+      </Node>
+      <Node name="Visual">
+        <OglModel name="Torus<?=$i?>VM" position="@/Mesh/MeshTorus1V.position" restPosition="@/Mesh/MeshTorus1V.position" triangles="@/Mesh/MeshTorus1V.triangles" material="mat Ambient 1 <?= $r*$amb ?> <?= $g*$amb ?> <?= $b*$amb ?> 1.0 Diffuse 1 <?= $r*$diff ?> <?= $g*$diff ?> <?= $b*$diff ?> 1.0 Specular 1 1.0 1.0 1.0 1.0 Emissive 0 <?= $r ?> <?= $g ?> <?= $b ?> 1.0 Shininess 1 40" handleDynamicTopology="false" />
+        <BarycentricMapping useRestPosition="true" />
+      </Node>
+    </Node>
+<?php
+}
+
+function add_obstacle($i,$x,$y,$z,$r,$h) {
+?>
+    <Node name="CylA_<?= $i ?>">
+      <EdgeSetTopologyContainer name="Cyl<?=$i?>LineTopo" position="<?= $x ?> <?= $y ?> <?= $z ?>  <?= $x ?> <?= $y+$h ?> <?= $z ?>" edges="0 1" />
+      <MechanicalObject name="Cyl<?=$i?>LineState" template="Vec3d" />
+      <EdgeSetGeometryAlgorithms name="Cyl<?=$i?>LineAlgo" />
+      <LineCollisionModel name="Cyl<?=$i?>CML" proximity="<?=$r?>" contactStiffness="40" moving="0" simulated="0" />
+      <Node name="Visual">
+        <TransformEngine name="Cyl<?=$i?>SurfXForm" input_position="@/Mesh/MeshCylinder.position" translation="<?= $x ?> <?= $y ?> <?= $z ?>" />
+        <OglModel name="Cyl<?=$i?>VM" position="@Cyl<?=$i?>SurfXForm.output_position" triangles="@/Mesh/MeshCylinder.triangles" color="0.23 0.25 0.42"/>
+      </Node>
+    </Node>
+<?php
+}
+?>
+
+<Node name="root" gravity="0 -100 0" dt="0.01">
+  <RequiredPlugin name="SofaOpenglVisual" />
+  <RequiredPlugin name="SofaSparseSolver" />
+<!--
+  <DefaultAnimationLoop name="animationloop" />
+  -->
+  <FreeMotionAnimationLoop name="animationLoop" solveVelocityConstraintFirst="true" />
+  <GenericConstraintSolver name="constraintSolver" maxIterations="100" tolerance="1.0e-9"/>
+  <DefaultPipeline name="Pipeline" />
+  <BruteForceDetection name="Detection" />
+  <DefaultContactManager name="ContactManager" response="SoftFrictionContact" responseParams="mu=0" />
+  <!--<DefaultCollisionGroupManager name="Group" />-->
+  <NewProximityIntersection name="Intersection" alarmDistance="<?= 0.25*$SCENE_SCALE ?>" contactDistance="<?= 0.001*$SCENE_SCALE ?>" />
+  <Node name="Mesh">
+    <MeshObjLoader name="MeshTorus1V" filename="mesh/torus1.obj" scale3d="<?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?>" triangulate="true"/>
+    <MeshObjLoader name="MeshTorus1C" filename="mesh/torus1-16x8.obj" scale3d="<?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?>" triangulate="true"/>
+    <MeshObjLoader name="MeshTorus1D05" filename="mesh/torus1-dilated-05.obj" scale3d="<?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?> <?= $SCENE_SCALE ?>" triangulate="true"/>
+    <MeshTetraStuffing name="stuffing" snapPoints="false" splitTetras="false" draw="false" size="<?= 0.55*$SCENE_SCALE*pow(2.0, -$DOFLEVEL/3.0) ?>" alphaLong="0.4" alphaShort="0.4" inputPoints="@MeshTorus1D05.position" inputTriangles="@MeshTorus1D05.triangles" />
+    <TransformEngine name="TorusVVel" input_position="@stuffing.outputPoints" translation="0 <?= -$FALL_V0 ?> 0" scale="0 0 0" />
+    <MeshObjLoader name="MeshCylinder" filename="mesh/cylinder.obj" scale3d="<?= $SCENE_SCALE*0.65 ?> <?= $SCENE_SCALE*0.65 ?> <?= $SCENE_SCALE*0.65 ?>" triangulate="true"/>
+  </Node>
+
+  <Node name="Simulation">
+    <!--<EulerImplicitSolver/>
+    <CGLinearSolver iterations="25" />-->
+
+    <?php
+      for($i=0;$i<$NBOBJECT;$i++) {
+        $r = $FALL_RADIUS;
+        do {
+          $x=rrand(-$r,$r);
+          $z=rrand(-$r,$r);
+        } while ($x*$x+$z*$z > $r*$r
+            || ($i > 0 && ($x-$xp)*($x-$xp)+($z-$zp)*($z-$zp)+$FALL_INTERVAL*$FALL_INTERVAL < $FALL_MINDIST*$FALL_MINDIST)
+            || ($i > 1 && ($x-$xp2)*($x-$xp2)+($z-$zp2)*($z-$zp2)+4*$FALL_INTERVAL*$FALL_INTERVAL < $FALL_MINDIST*$FALL_MINDIST)
+            || ($i > 2 && ($x-$xp3)*($x-$xp3)+($z-$zp3)*($z-$zp3)+9*$FALL_INTERVAL*$FALL_INTERVAL < $FALL_MINDIST*$FALL_MINDIST)
+            || ($i > 3 && ($x-$xp4)*($x-$xp4)+($z-$zp4)*($z-$zp4)+16*$FALL_INTERVAL*$FALL_INTERVAL < $FALL_MINDIST*$FALL_MINDIST)
+          );
+        do {
+          $rx=rrand(-90,90);
+          $ry=rrand(-90,90);
+          $rz=rrand(-90,90);
+        } while ($rx*$rx+$rz*$rz < 30*30);
+
+        add_object($i,$x,$FALL_H0+$i*$FALL_INTERVAL,$z,$rx,$ry,$rz);
+        if ($i > 2) {
+          $xp4 = $xp3;
+          $zp4 = $zp3;
+        }
+        if ($i > 1) {
+          $xp3 = $xp2;
+          $zp3 = $zp2;
+        }
+        if ($i > 0) {
+          $xp2 = $xp;
+          $zp2 = $zp;
+        }
+        $xp = $x;
+        $zp = $z;
+      }
+    ?>
+  </Node>
+  <Node name="Obstacles">
+    <?php
+      for($i=0;$i<$NBOBSTACLE;$i++) {
+        $angle = 2.0*M_PI*$i / $NBOBSTACLE;
+        $x = cos($angle) * $OBSTACLE_RADIUS;
+        $z = sin($angle) * $OBSTACLE_RADIUS;
+        add_obstacle($i,$x,0,$z,$SCENE_SCALE*0.65,9.5*$SCENE_SCALE*0.65);
+      }
+      $fdim = 100*$SCENE_SCALE;
+      $fprox = 0.5*$SCENE_SCALE;
+    ?>
+
+    <Node name="Floor" tags="NoBBox" >
+      <TriangleSetTopologyContainer name="FloorTopo" position="<?= -$fdim ?> <?= -$fprox ?> <?= -$fdim ?>  <?=  $fdim ?> <?= -$fprox ?> <?= -$fdim ?>  <?=  $fdim ?> <?= -$fprox ?> <?=  $fdim ?>  <?= -$fdim ?> <?= -$fprox ?> <?=  $fdim ?>" triangles="0 2 1  3 2 0" />
+      <MechanicalObject template="Vec3d"/>
+      <TriangleCollisionModel name="FloorCM" proximity="<?=$fprox?>" contactStiffness="60" moving="0" simulated="0" />
+      <Node name="Visu">
+        <RegularGridTopology name="FloorTopo" nx="20" ny="1" nz="20" min="<?=  $fdim ?> 0 <?= -$fdim ?>" max="<?= -$fdim ?> 0 <?=  $fdim ?>" />
+        <OglModel name="Visual" color="0.52 0.46 0.4" material="floor Ambient 1 0.01 0.01 0.01 0.0 Diffuse 1 0.52 0.46 0.4 1.0 Specular 0 1.0 1.0 1.0 1.0 Emissive 0 0.05 0.05 0.05 0.0 Shininess 0 20" />
+      </Node>
+    </Node>
+  </Node>
+<!--
+  <LightManager listening="true" shadows="true" />
+  <SpotLight position="-50 800 -180" direction="0 -1 0" shadowTextureSize="4096" zNear="300" zFar="1200" attenuation="0.0001"/>
+  <SpotLight position="0 800 800" direction="0 -0.5 -0.25" shadowTextureSize="4096" zNear="500" zFar="1600" attenuation="0.0001"/>
+  <OglShadowShader/>
+-->
+</Node>  
