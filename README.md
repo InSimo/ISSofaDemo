@@ -1,15 +1,15 @@
 **This repository contains a technology demonstration project from [InSimo](https://www.insimo.com), based on [ISSofa](https://github.com/InSimo/ISSofa), a version of [SOFA](https://www.sofa-framework.org/) that is optimized for the use case of interactive biomechanical simulations.**
 
-[<img src="doc/images/TorusFall_10x129_DOF.png" alt="demo screenshot" height="200" />](doc/images/TorusFall_40x344_DOF_Visuals10x129_DOF.png)
+[<img src="doc/images/TorusFall_10x129_DOF.png" alt="demo screenshot" height="200" />](doc/images/TorusFall_10x129_DOF.png)
 
 It also contains:
-- [ISSofaGUI](IS/ISSofaGUI): a modified version of the GUI originally provided in Sofa's application/sofa/gui directory
-- [ISSofaPython](IS/ISSofaPython): a pybind11-based python binding module and plugin compatible with both python 2 and python 3
-- [ISExternals](IS/ISExtermals) and [SofaWinDependencies](IS/SofaWinDependencies): precompiled dependencies (currently only for Windows and Linux)
+- [ISSofaGUI](https://github.com/InSimo/ISSofaGUI): a modified version of the GUI originally provided in Sofa's application/sofa/gui directory
+- [ISSofaPython](https://github.com/InSimo/ISSofaPython): a pybind11-based python binding module and plugin compatible with both python 2 and python 3
+- [ISExternals](https://github.com/InSimo/ISExternals) and [SofaWinDependencies](https://github.com/InSimo/SofaWinDependencies): precompiled dependencies (currently only for Windows and Linux)
 
 ## Build Instructions
 
-The project main `CMakelists.txt file` is located in the `build` folder.
+The project main `CMakeLists.txt file` is located in the `build` folder.
 See [the following document](https://docs.google.com/document/d/1lpQx7Yv4o2v18lNtOjqOFATQ0IemkY_Fh5XnJN6pL30/edit?usp=sharing) for more detailed instructions.
 
 ## Execution Instructions
