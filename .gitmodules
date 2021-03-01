@@ -1,0 +1,20 @@
+[submodule "ISSofa"]
+	path = ISSofa
+	url = ../ISSofa.git
+	branch = issofa
+[submodule "IS/ISSofaPython"]
+	path = IS/ISSofaPython
+	url = ../ISSofaPython.git
+	branch = master
+[submodule "IS/ISSofaGUI"]
+	path = IS/ISSofaGUI
+	url = ../ISSofaGUI.git
+	branch = master
+[submodule "IS/SofaWinDependencies"]
+	path = IS/SofaWinDependencies
+	url = ../SofaWinDependencies.git
+	branch = master
+[submodule "IS/ISExternals"]
+	path = IS/ISExternals
+	url = ../ISExternals.git
+	branch = master
